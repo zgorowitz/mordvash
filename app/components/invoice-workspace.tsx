@@ -1,159 +1,57 @@
 "use client";
 
-import {
-  Clock3,
-  FileText,
-  Folder,
-  Plus,
-  Save,
-  Settings2,
-  Trash2
-} from "lucide-react";
+import { FileText, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-
-type FolderItem = {
-  id: string;
-  name: string;
-};
-
-type VendorPreset = {
-  id: string;
-  name: string;
-  email: string;
-  address: string;
-  terms: string;
-  bank: string;
-  account: string;
-  routing: string;
-  wire: string;
-};
-
-type HistoryEvent = {
-  id: string;
-  at: string;
-  message: string;
-};
-
-type Invoice = {
-  id: string;
-  folderId: string;
-  number: string;
-  client: string;
-  vendorId: string;
-  date: string;
-  terms: string;
-  title: string;
-  description: string;
-  amount: string;
-  status: "Draft" | "Sent" | "Paid";
-  notes: string;
-  history: HistoryEvent[];
-};
-
-type AppState = {
-  folders: FolderItem[];
-  vendors: VendorPreset[];
-  invoices: Invoice[];
-};
-
-const storageKey = "invoice-desk-state";
-
-const seedState: AppState = {
-  folders: [
-    { id: "active", name: "Active" },
-    { id: "paid", name: "Paid" },
-    { id: "archive", name: "Archive" }
-  ],
-  vendors: [
-    {
-      id: "mordvash",
-      name: "MORDVASH 613 INC.",
-      email: "mordvash613@gmail.com",
-      address: "551 Midwood St, Brooklyn, NY 11203",
-      terms: "Due on receipt",
-      bank: "Bank",
-      account: "966585561",
-      routing: "267084131",
-      wire: "21000021"
-    }
-  ],
-  invoices: [
-    {
-      id: "inv-022",
-      folderId: "active",
-      number: "022",
-      client: "EncoreOne LLC",
-      vendorId: "mordvash",
-      date: "2026-06-29",
-      terms: "Due on receipt",
-      title: "Consulting",
-      description: "Administrative Support Services",
-      amount: "5964.00",
-      status: "Sent",
-      notes: "",
-      history: [
-        {
-          id: "h-1",
-          at: "2026-06-29T15:37:00.000Z",
-          message: "Imported starter invoice."
-        }
-      ]
-    }
-  ]
-};
-
-const blankInvoice = (folderId: string, vendorId: string): Invoice => ({
-  id: crypto.randomUUID(),
-  folderId,
-  number: "",
-  client: "",
-  vendorId,
-  date: new Date().toISOString().slice(0, 10),
-  terms: "Due on receipt",
-  title: "",
-  description: "",
-  amount: "",
-  status: "Draft",
-  notes: "",
-  history: [
-    {
-      id: crypto.randomUUID(),
-      at: new Date().toISOString(),
-      message: "Invoice created."
-    }
-  ]
-});
-
-const blankVendor = (): VendorPreset => ({
-  id: crypto.randomUUID(),
-  name: "",
-  email: "",
-  address: "",
-  terms: "Due on receipt",
-  bank: "",
-  account: "",
-  routing: "",
-  wire: ""
-});
+import {
+  AppState,
+  ClientPreset,
+  Invoice,
+  blankClientPreset,
+  createInvoiceForClient,
+  safeState,
+  seedState,
+  storageKey
+} from "../lib/invoice-store";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 
 export function InvoiceWorkspace() {
   const [state, setState] = useState<AppState>(seedState);
   const [ready, setReady] = useState(false);
-  const [activeFolder, setActiveFolder] = useState(seedState.folders[0].id);
+  const [activeClientId, setActiveClientId] = useState(seedState.clients[0].id);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(seedState.invoices[0].id);
-  const [draft, setDraft] = useState(seedState.invoices[0]);
-  const [vendorDraft, setVendorDraft] = useState(seedState.vendors[0]);
-  const [folderName, setFolderName] = useState("");
+  const [draft, setDraft] = useState<Invoice>(seedState.invoices[0]);
+  const [clientDraft, setClientDraft] = useState<ClientPreset>(blankClientPreset());
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(storageKey);
     if (saved) {
-      const parsed = JSON.parse(saved) as AppState;
+      let parsed = safeState(JSON.parse(saved));
+      const firstClient = parsed.clients[0] ?? seedState.clients[0];
+      let firstInvoice = parsed.invoices.find((invoice) => invoice.clientId === firstClient.id) ?? parsed.invoices[0];
+
+      if (!firstInvoice) {
+        firstInvoice = createInvoiceForClient(firstClient, parsed.vendors[0]?.id ?? "", parsed.invoices);
+        parsed = { ...parsed, invoices: [firstInvoice] };
+      }
+
       setState(parsed);
-      setActiveFolder(parsed.folders[0]?.id ?? "active");
-      setSelectedInvoiceId(parsed.invoices[0]?.id ?? "");
-      setDraft(parsed.invoices[0] ?? blankInvoice(parsed.folders[0]?.id ?? "active", parsed.vendors[0]?.id ?? ""));
-      setVendorDraft(parsed.vendors[0] ?? blankVendor());
+      setActiveClientId(firstClient.id);
+      setSelectedInvoiceId(firstInvoice.id);
+      setDraft(firstInvoice);
     }
     setReady(true);
   }, []);
@@ -164,30 +62,54 @@ export function InvoiceWorkspace() {
     }
   }, [ready, state]);
 
-  const visibleInvoices = useMemo(
-    () => state.invoices.filter((invoice) => invoice.folderId === activeFolder),
-    [activeFolder, state.invoices]
+  const activeClient = state.clients.find((client) => client.id === activeClientId) ?? state.clients[0];
+  const selectedVendor = state.vendors.find((vendor) => vendor.id === draft.vendorId) ?? state.vendors[0];
+  const clientInvoices = useMemo(
+    () => state.invoices.filter((invoice) => invoice.clientId === activeClient?.id),
+    [activeClient?.id, state.invoices]
   );
 
-  const selectedInvoice = state.invoices.find((invoice) => invoice.id === selectedInvoiceId);
-  const selectedVendor = state.vendors.find((vendor) => vendor.id === draft.vendorId);
+  function selectClient(client: ClientPreset) {
+    const invoice = state.invoices.find((item) => item.clientId === client.id);
+    setActiveClientId(client.id);
+    if (invoice) {
+      setSelectedInvoiceId(invoice.id);
+      setDraft(invoice);
+      return;
+    }
+
+    const newInvoice = createInvoiceForClient(client, state.vendors[0]?.id ?? "", state.invoices);
+    setState((current) => ({ ...current, invoices: [newInvoice, ...current.invoices] }));
+    setSelectedInvoiceId(newInvoice.id);
+    setDraft(newInvoice);
+  }
 
   function selectInvoice(invoice: Invoice) {
     setSelectedInvoiceId(invoice.id);
     setDraft(invoice);
   }
 
-  function addFolder() {
-    const name = folderName.trim();
+  function addClient() {
+    const name = clientDraft.name.trim();
     if (!name) return;
-    const folder = { id: crypto.randomUUID(), name };
-    setState((current) => ({ ...current, folders: [...current.folders, folder] }));
-    setActiveFolder(folder.id);
-    setFolderName("");
+
+    const client = { ...clientDraft, name };
+    const invoice = createInvoiceForClient(client, state.vendors[0]?.id ?? "", state.invoices);
+    setState((current) => ({
+      ...current,
+      clients: [client, ...current.clients],
+      invoices: [invoice, ...current.invoices]
+    }));
+    setActiveClientId(client.id);
+    setSelectedInvoiceId(invoice.id);
+    setDraft(invoice);
+    setClientDraft(blankClientPreset());
+    setClientDialogOpen(false);
   }
 
-  function addInvoice() {
-    const invoice = blankInvoice(activeFolder, state.vendors[0]?.id ?? "");
+  function newInvoice() {
+    if (!activeClient) return;
+    const invoice = createInvoiceForClient(activeClient, state.vendors[0]?.id ?? "", state.invoices);
     setState((current) => ({ ...current, invoices: [invoice, ...current.invoices] }));
     setSelectedInvoiceId(invoice.id);
     setDraft(invoice);
@@ -195,7 +117,7 @@ export function InvoiceWorkspace() {
 
   function saveInvoice() {
     const event = {
-      id: crypto.randomUUID(),
+      id: `history-${Date.now()}`,
       at: new Date().toISOString(),
       message: "Invoice details saved."
     };
@@ -204,101 +126,96 @@ export function InvoiceWorkspace() {
       ...current,
       invoices: current.invoices.map((invoice) => (invoice.id === updated.id ? updated : invoice))
     }));
+    setSelectedInvoiceId(updated.id);
     setDraft(updated);
   }
 
   function deleteInvoice() {
-    if (!selectedInvoice) return;
-    setState((current) => ({
-      ...current,
-      invoices: current.invoices.filter((invoice) => invoice.id !== selectedInvoice.id)
-    }));
-    const nextInvoice = state.invoices.find((invoice) => invoice.id !== selectedInvoice.id);
+    const remaining = state.invoices.filter((invoice) => invoice.id !== selectedInvoiceId);
+    const nextInvoice =
+      remaining.find((invoice) => invoice.clientId === activeClientId) ??
+      remaining[0] ??
+      (activeClient ? createInvoiceForClient(activeClient, state.vendors[0]?.id ?? "", remaining) : undefined);
+    setState((current) => ({ ...current, invoices: remaining }));
     if (nextInvoice) {
+      setState((current) =>
+        current.invoices.some((invoice) => invoice.id === nextInvoice.id)
+          ? current
+          : { ...current, invoices: [nextInvoice, ...current.invoices] }
+      );
       setSelectedInvoiceId(nextInvoice.id);
       setDraft(nextInvoice);
+      setActiveClientId(nextInvoice.clientId);
     }
   }
 
-  function saveVendor() {
-    const exists = state.vendors.some((vendor) => vendor.id === vendorDraft.id);
-    setState((current) => ({
-      ...current,
-      vendors: exists
-        ? current.vendors.map((vendor) => (vendor.id === vendorDraft.id ? vendorDraft : vendor))
-        : [vendorDraft, ...current.vendors]
-    }));
-  }
-
-  function newVendor() {
-    setVendorDraft(blankVendor());
-  }
-
-  function applyVendor(vendorId: string) {
-    const vendor = state.vendors.find((item) => item.id === vendorId);
-    setDraft((current) => ({
-      ...current,
-      vendorId,
-      terms: vendor?.terms ?? current.terms
-    }));
+  function updateDraft(patch: Partial<Invoice>) {
+    setDraft((current) => ({ ...current, ...patch }));
   }
 
   return (
     <div className="workspace">
-      <aside className="panel folderPanel">
-        <div className="panelTitle">
-          <Folder size={18} />
-          <span>Folders</span>
-        </div>
-        <div className="folderList">
-          {state.folders.map((folder) => {
-            const count = state.invoices.filter((invoice) => invoice.folderId === folder.id).length;
-            return (
-              <button
-                className={folder.id === activeFolder ? "folderButton active" : "folderButton"}
-                key={folder.id}
-                onClick={() => setActiveFolder(folder.id)}
-              >
-                <span>{folder.name}</span>
-                <span>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="inlineForm">
-          <input
-            aria-label="New folder name"
-            value={folderName}
-            onChange={(event) => setFolderName(event.target.value)}
-            placeholder="New folder"
-          />
-          <button className="iconButton" onClick={addFolder} title="Add folder">
-            <Plus size={16} />
-          </button>
-        </div>
-      </aside>
-
-      <section className="panel invoiceList">
+      <aside className="clientPanel panel">
         <div className="sectionHeader">
-          <div className="panelTitle">
-            <FileText size={18} />
-            <span>Invoices</span>
-          </div>
-          <button className="smallButton" onClick={addInvoice}>
-            <Plus size={16} />
-            New
-          </button>
+          <div className="panelTitle">Clients</div>
+          <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Plus size={15} />
+                Client
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add client</DialogTitle>
+                <DialogDescription>
+                  This creates a client folder and a first invoice from the preset.
+                </DialogDescription>
+              </DialogHeader>
+              <ClientPresetForm value={clientDraft} onChange={setClientDraft} />
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button type="button" onClick={addClient}>
+                  Add client
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
-        <div className="invoiceRows">
-          {visibleInvoices.map((invoice) => (
+
+        <div className="clientList">
+          {state.clients.map((client) => (
+            <button
+              className={client.id === activeClientId ? "clientFolder active" : "clientFolder"}
+              key={client.id}
+              onClick={() => selectClient(client)}
+            >
+              <span>{client.name || "Unnamed client"}</span>
+              <span>{state.invoices.filter((invoice) => invoice.clientId === client.id).length}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="invoiceFolder">
+          <div className="sectionHeader compact">
+            <div className="panelTitle">Invoices</div>
+            <Button size="icon" variant="outline" onClick={newInvoice} title="New invoice">
+              <Plus size={15} />
+            </Button>
+          </div>
+          {clientInvoices.map((invoice) => (
             <button
               className={invoice.id === selectedInvoiceId ? "invoiceRow active" : "invoiceRow"}
               key={invoice.id}
               onClick={() => selectInvoice(invoice)}
             >
               <span>
-                <strong>{invoice.number || "No number"}</strong>
-                <small>{invoice.client || "No client"}</small>
+                <strong>{invoice.invoiceNumber}</strong>
+                <small>{invoice.title || "Untitled"}</small>
               </span>
               <span>
                 <strong>{currency(invoice.amount)}</strong>
@@ -306,194 +223,228 @@ export function InvoiceWorkspace() {
               </span>
             </button>
           ))}
-          {!visibleInvoices.length && <p className="muted">No invoices in this folder.</p>}
         </div>
-      </section>
+      </aside>
 
-      <section className="panel editorPanel">
+      <section className="previewPanel panel">
         <div className="sectionHeader">
           <div className="panelTitle">
-            <Settings2 size={18} />
-            <span>Edit invoice</span>
+            <FileText size={18} />
+            PDF preview
           </div>
-          <div className="actions">
-            <button className="smallButton" onClick={saveInvoice}>
-              <Save size={16} />
-              Save
-            </button>
-            <button className="iconButton danger" onClick={deleteInvoice} title="Delete invoice">
-              <Trash2 size={16} />
-            </button>
-          </div>
+          <span className="muted">Invoice {draft.invoiceNumber}</span>
         </div>
-
-        <div className="formGrid">
-          <label>
-            Invoice #
-            <input value={draft.number} onChange={(event) => setDraft({ ...draft, number: event.target.value })} />
-          </label>
-          <label>
-            Client
-            <input value={draft.client} onChange={(event) => setDraft({ ...draft, client: event.target.value })} />
-          </label>
-          <label>
-            Folder
-            <select value={draft.folderId} onChange={(event) => setDraft({ ...draft, folderId: event.target.value })}>
-              {state.folders.map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  {folder.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Vendor preset
-            <select value={draft.vendorId} onChange={(event) => applyVendor(event.target.value)}>
-              {state.vendors.map((vendor) => (
-                <option key={vendor.id} value={vendor.id}>
-                  {vendor.name || "Unnamed vendor"}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Date
-            <input
-              type="date"
-              value={draft.date}
-              onChange={(event) => setDraft({ ...draft, date: event.target.value })}
-            />
-          </label>
-          <label>
-            Terms
-            <input value={draft.terms} onChange={(event) => setDraft({ ...draft, terms: event.target.value })} />
-          </label>
-          <label>
-            Title
-            <input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
-          </label>
-          <label>
-            Amount
-            <input value={draft.amount} onChange={(event) => setDraft({ ...draft, amount: event.target.value })} />
-          </label>
-          <label>
-            Description
-            <textarea
-              value={draft.description}
-              onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-            />
-          </label>
-          <label>
-            Notes
-            <textarea value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} />
-          </label>
-        </div>
-
-        {selectedVendor && (
-          <div className="vendorSummary">
-            <strong>{selectedVendor.name}</strong>
-            <span>{selectedVendor.email}</span>
-            <span>{selectedVendor.address}</span>
-            <span>
-              Routing {selectedVendor.routing || "-"} · Account {selectedVendor.account || "-"}
-            </span>
-          </div>
-        )}
+        <InvoicePreview invoice={draft} client={activeClient} vendor={selectedVendor} />
       </section>
 
-      <aside className="sideStack">
-        <section className="panel">
-          <div className="sectionHeader">
-            <div className="panelTitle">
-              <Settings2 size={18} />
-              <span>Vendor preset</span>
-            </div>
-            <button className="smallButton" onClick={newVendor}>
-              <Plus size={16} />
-              New
-            </button>
+      <section className="editorPanel panel">
+        <div className="sectionHeader">
+          <div>
+            <div className="panelTitle">Invoice form</div>
+            <p className="smallText">ID is generated automatically.</p>
           </div>
-          <div className="compactForm">
-            <select
-              value={vendorDraft.id}
-              onChange={(event) => {
-                const vendor = state.vendors.find((item) => item.id === event.target.value);
-                if (vendor) setVendorDraft(vendor);
-              }}
-            >
-              {state.vendors.map((vendor) => (
-                <option key={vendor.id} value={vendor.id}>
-                  {vendor.name || "Unnamed vendor"}
-                </option>
-              ))}
-            </select>
-            <input
-              value={vendorDraft.name}
-              onChange={(event) => setVendorDraft({ ...vendorDraft, name: event.target.value })}
-              placeholder="Vendor name"
-            />
-            <input
-              value={vendorDraft.email}
-              onChange={(event) => setVendorDraft({ ...vendorDraft, email: event.target.value })}
-              placeholder="Email"
-            />
-            <input
-              value={vendorDraft.address}
-              onChange={(event) => setVendorDraft({ ...vendorDraft, address: event.target.value })}
-              placeholder="Address"
-            />
-            <input
-              value={vendorDraft.terms}
-              onChange={(event) => setVendorDraft({ ...vendorDraft, terms: event.target.value })}
-              placeholder="Terms"
-            />
-            <input
-              value={vendorDraft.bank}
-              onChange={(event) => setVendorDraft({ ...vendorDraft, bank: event.target.value })}
-              placeholder="Bank"
-            />
-            <input
-              value={vendorDraft.account}
-              onChange={(event) => setVendorDraft({ ...vendorDraft, account: event.target.value })}
-              placeholder="Account"
-            />
-            <input
-              value={vendorDraft.routing}
-              onChange={(event) => setVendorDraft({ ...vendorDraft, routing: event.target.value })}
-              placeholder="Routing"
-            />
-            <input
-              value={vendorDraft.wire}
-              onChange={(event) => setVendorDraft({ ...vendorDraft, wire: event.target.value })}
-              placeholder="Wire"
-            />
-            <button className="primaryButton fullWidth" onClick={saveVendor}>
-              Save preset
-            </button>
+          <div className="actions">
+            <Button size="sm" variant="outline" onClick={saveInvoice}>
+              <Save size={15} />
+              Save
+            </Button>
+            <Button size="icon" variant="danger" onClick={deleteInvoice} title="Delete invoice">
+              <Trash2 size={15} />
+            </Button>
           </div>
-        </section>
+        </div>
 
-        <section className="panel">
-          <div className="panelTitle">
-            <Clock3 size={18} />
-            <span>History</span>
+        <div className="simpleForm">
+          <div className="readonlyLine">
+            <span>Invoice ID</span>
+            <strong>{draft.invoiceNumber}</strong>
           </div>
-          <div className="historyList">
-            {draft.history.map((event) => (
-              <div className="historyItem" key={event.id}>
-                <strong>{event.message}</strong>
-                <span>{new Date(event.at).toLocaleString()}</span>
-              </div>
-            ))}
+          <div className="readonlyLine">
+            <span>Client</span>
+            <strong>{activeClient?.name}</strong>
           </div>
+          <Label>
+            Date
+            <Input type="date" value={draft.date} onChange={(event) => updateDraft({ date: event.target.value })} />
+          </Label>
+          <Label>
+            Terms
+            <Input value={draft.terms} onChange={(event) => updateDraft({ terms: event.target.value })} />
+          </Label>
+          <Label>
+            Title
+            <Input value={draft.title} onChange={(event) => updateDraft({ title: event.target.value })} />
+          </Label>
+          <Label>
+            Amount
+            <Input value={draft.amount} onChange={(event) => updateDraft({ amount: event.target.value })} />
+          </Label>
+          <Label>
+            Description
+            <Textarea
+              value={draft.description}
+              onChange={(event) => updateDraft({ description: event.target.value })}
+            />
+          </Label>
+          <Label>
+            Notes
+            <Textarea value={draft.notes} onChange={(event) => updateDraft({ notes: event.target.value })} />
+          </Label>
+        </div>
+
+        <div className="historyBlock">
+          <div className="panelTitle">History</div>
+          {draft.history.map((event) => (
+            <div className="historyItem" key={event.id}>
+              <strong>{event.message}</strong>
+              <span>{new Date(event.at).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ClientPresetForm({
+  value,
+  onChange
+}: {
+  value: ClientPreset;
+  onChange: (client: ClientPreset) => void;
+}) {
+  const update = (patch: Partial<ClientPreset>) => onChange({ ...value, ...patch });
+
+  return (
+    <div className="dialogGrid">
+      <Label>
+        Client name
+        <Input value={value.name} onChange={(event) => update({ name: event.target.value })} />
+      </Label>
+      <Label>
+        Email
+        <Input value={value.email} onChange={(event) => update({ email: event.target.value })} />
+      </Label>
+      <Label className="spanTwo">
+        Address
+        <Input value={value.address} onChange={(event) => update({ address: event.target.value })} />
+      </Label>
+      <Label>
+        Bank
+        <Input value={value.bank} onChange={(event) => update({ bank: event.target.value })} />
+      </Label>
+      <Label>
+        Account
+        <Input value={value.account} onChange={(event) => update({ account: event.target.value })} />
+      </Label>
+      <Label>
+        Routing
+        <Input value={value.routing} onChange={(event) => update({ routing: event.target.value })} />
+      </Label>
+      <Label>
+        Default amount
+        <Input value={value.defaultAmount} onChange={(event) => update({ defaultAmount: event.target.value })} />
+      </Label>
+      <Label>
+        Default title
+        <Input value={value.defaultTitle} onChange={(event) => update({ defaultTitle: event.target.value })} />
+      </Label>
+      <Label>
+        Default terms
+        <Input value={value.defaultTerms} onChange={(event) => update({ defaultTerms: event.target.value })} />
+      </Label>
+      <Label className="spanTwo">
+        Default description
+        <Textarea
+          value={value.defaultDescription}
+          onChange={(event) => update({ defaultDescription: event.target.value })}
+        />
+      </Label>
+    </div>
+  );
+}
+
+function InvoicePreview({
+  invoice,
+  client,
+  vendor
+}: {
+  invoice: Invoice;
+  client?: ClientPreset;
+  vendor?: { name: string; email: string; address: string; phone: string; bank: string; account: string; routing: string; wire: string };
+}) {
+  return (
+    <div className="invoicePreview">
+      <div className="previewHeader">
+        <div>
+          <strong>{vendor?.name}</strong>
+          <span>{vendor?.email}</span>
+          <span>{vendor?.address}</span>
+          <span>{vendor?.phone}</span>
+        </div>
+        <div className="previewMeta">
+          <h2>INVOICE</h2>
+          <span>#{invoice.invoiceNumber}</span>
+          <span>{formatDate(invoice.date)}</span>
+          <span>{invoice.terms}</span>
+        </div>
+      </div>
+
+      <div className="previewBoxes">
+        <section>
+          <h3>Bill To</h3>
+          <strong>{client?.name}</strong>
+          <span>{client?.address}</span>
+          <span>{client?.email}</span>
+          {client?.bank && <span>Bank: {client.bank}</span>}
+          {client?.account && <span>Account: {client.account}</span>}
+          {client?.routing && <span>Routing: {client.routing}</span>}
         </section>
-      </aside>
+        <section>
+          <h3>Payment</h3>
+          <strong>{vendor?.bank}</strong>
+          <span>Account {vendor?.account}</span>
+          <span>Routing {vendor?.routing}</span>
+          <span>Wire {vendor?.wire}</span>
+        </section>
+      </div>
+
+      <table className="previewTable">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{invoice.title}</td>
+            <td>{invoice.description}</td>
+            <td>{currency(invoice.amount)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div className="previewTotal">
+        <span>Total Balance</span>
+        <strong>{currency(invoice.amount)}</strong>
+      </div>
+      <div className="previewNotes">
+        <strong>Notes</strong>
+        <span>{invoice.notes || " "}</span>
+      </div>
     </div>
   );
 }
 
 function currency(value: string) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return "$0.00";
-  return number.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "$0.00";
+  return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+function formatDate(value: string) {
+  if (!value) return "";
+  return new Date(`${value}T00:00:00`).toLocaleDateString();
 }
