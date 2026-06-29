@@ -1,4 +1,5 @@
 import { Show, SignInButton } from "@clerk/nextjs";
+import { AccessGate } from "./components/access-gate";
 import { AppTopbar } from "./components/app-topbar";
 import { InvoiceWorkspace } from "./components/invoice-workspace";
 
@@ -34,7 +35,9 @@ export default function Home() {
     <main>
       <Show when="signed-in" fallback={signedOutView}>
         <AppTopbar title="Invoices" />
-        <InvoiceWorkspace />
+        <AccessGate>
+          <InvoiceWorkspace />
+        </AccessGate>
       </Show>
     </main>
   );

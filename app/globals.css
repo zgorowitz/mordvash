@@ -80,6 +80,18 @@ main {
   background: transparent;
 }
 
+.topbarLogout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  padding: 7px 0;
+  font-weight: 800;
+}
+
 .eyebrow,
 .smallText,
 .muted {
@@ -113,6 +125,27 @@ main {
 
 .signInView {
   min-height: 72vh;
+}
+
+.accessPanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 1500px;
+  margin: 0 auto;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+  padding: 24px 0;
+}
+
+.accessPanel h2 {
+  margin: 2px 0 6px;
+  font-size: 22px;
+}
+
+.accessPanel p {
+  margin: 0;
 }
 
 .workspace {
@@ -230,10 +263,22 @@ main {
 }
 
 .settingsShell {
-  max-width: 900px;
+  display: grid;
+  gap: 22px;
+  max-width: 980px;
   margin: 0 auto;
   border-top: 1px solid var(--line-strong);
   border-bottom: 1px solid var(--line-strong);
+}
+
+.settingsBlock {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 18px;
+}
+
+.settingsBlock:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .settingsRow {
@@ -248,6 +293,20 @@ main {
   justify-content: stretch;
 }
 
+.storageLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.storageLine span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .uiButton {
   display: inline-flex;
   align-items: center;
@@ -256,12 +315,18 @@ main {
   border-radius: 6px;
   font-weight: 800;
   outline: none;
+  white-space: nowrap;
   transition: background 120ms ease, color 120ms ease;
 }
 
 .uiButton:focus-visible {
   outline: 1px solid var(--ink);
   outline-offset: 2px;
+}
+
+.uiButton:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .uiButtonDefault,
@@ -300,7 +365,8 @@ main {
 }
 
 .uiInput,
-.uiTextarea {
+.uiTextarea,
+.uiSelect {
   width: 100%;
   border: 0;
   border-bottom: 1px solid var(--line-strong);
@@ -308,6 +374,10 @@ main {
   background: transparent;
   color: var(--ink);
   padding: 9px 0;
+}
+
+.uiSelect {
+  appearance: none;
 }
 
 .uiTextarea {
@@ -571,7 +641,8 @@ main {
   }
 
   .topbar,
-  .signInView {
+  .signInView,
+  .accessPanel {
     align-items: flex-start;
     flex-direction: column;
   }

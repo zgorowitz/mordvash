@@ -1,3 +1,5 @@
+import repoState from "../../data/app-state.json";
+
 export type VendorPreset = {
   id: string;
   name: string;
@@ -48,15 +50,26 @@ export type Invoice = {
   history: HistoryEvent[];
 };
 
+export type Invitation = {
+  id: string;
+  email: string;
+  role: "Owner" | "Member";
+  createdAt: string;
+};
+
 export type AppState = {
   vendors: VendorPreset[];
   clients: ClientPreset[];
   invoices: Invoice[];
+  invitations: Invitation[];
 };
 
-export const storageKey = "invoice-desk-state-v2";
+export const storageKey = "invoice-desk-state-v3";
 
-export const seedState: AppState = {
+const repoSeed = repoState as Partial<AppState>;
+const repoSeedClients = Array.isArray(repoSeed.clients) ? repoSeed.clients : [];
+
+const seedStateFallback: AppState = {
   vendors: [
     {
       id: "vendor-mordvash",
@@ -71,76 +84,19 @@ export const seedState: AppState = {
       wire: "21000021"
     }
   ],
-  clients: [
+  clients: [],
+  invoices: [],
+  invitations: [
     {
-      id: "client-encoreone",
-      name: "EncoreOne LLC",
-      address: "180 College Road, Monsey, NY 10952",
-      email: "",
-      identificationNumber: "",
-      taxIdentificationNumber: "",
-      bank: "",
-      account: "",
-      routing: "",
-      defaultTitle: "Consulting",
-      defaultDescription: "Administrative Support Services",
-      defaultAmount: "5964.00",
-      defaultTerms: "Due on receipt"
-    },
-    {
-      id: "client-chabad-org",
-      name: "Chabad.org",
-      address: "784 Eastern Parkway, #405, Brooklyn, NY 11213",
-      email: "",
-      identificationNumber: "",
-      taxIdentificationNumber: "",
-      bank: "",
-      account: "",
-      routing: "",
-      defaultTitle: "Setup",
-      defaultDescription: "Data Analytics Consultant",
-      defaultAmount: "4291.66",
-      defaultTerms: "Due on receipt"
-    },
-    {
-      id: "client-limestone-digital",
-      name: "Limestone Digital s.r.o",
-      address: "Pernerova 697-35, Karlin 186 00 Praha 8",
-      email: "",
-      identificationNumber: "6552706",
-      taxIdentificationNumber: "CZ06552706",
-      bank: "",
-      account: "",
-      routing: "",
-      defaultTitle: "Setup",
-      defaultDescription: "Business Intelligence",
-      defaultAmount: "12750.00",
-      defaultTerms: "Due on receipt"
-    }
-  ],
-  invoices: [
-    {
-      id: "invoice-022",
-      invoiceNumber: "022",
-      clientId: "client-encoreone",
-      vendorId: "vendor-mordvash",
-      date: "2026-06-29",
-      terms: "Due on receipt",
-      title: "Consulting",
-      description: "Administrative Support Services",
-      amount: "5964.00",
-      status: "Sent",
-      notes: "",
-      history: [
-        {
-          id: "history-imported",
-          at: "2026-06-29T15:37:00.000Z",
-          message: "Imported starter invoice."
-        }
-      ]
+      id: "invite-owner",
+      email: "zgorowitz@gmail.com",
+      role: "Owner",
+      createdAt: "2026-06-29T00:00:00.000Z"
     }
   ]
 };
+
+export const seedState: AppState = normalizeAppState(repoSeed);
 
 export function createId(prefix: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -219,6 +175,15 @@ export function blankClientPreset(): ClientPreset {
   };
 }
 
+export function blankInvitation(): Invitation {
+  return {
+    id: createId("invite"),
+    email: "",
+    role: "Member",
+    createdAt: new Date().toISOString()
+  };
+}
+
 export function safeState(input: unknown): AppState {
   if (!input || typeof input !== "object") {
     return seedState;
@@ -229,19 +194,43 @@ export function safeState(input: unknown): AppState {
     return seedState;
   }
 
-  const clients = mergeSeedClients(candidate.clients);
+  return normalizeAppState(candidate);
+}
+
+export function isEmailInvited(email: string | null | undefined, invitations: Invitation[]) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return false;
+
+  return invitations.some((invitation) => normalizeEmail(invitation.email) === normalizedEmail);
+}
+
+export function normalizeEmail(email: string | null | undefined) {
+  return email?.trim().toLowerCase() ?? "";
+}
+
+export function serializeAppState(state: AppState) {
+  return JSON.stringify(safeState(state), null, 2) + "\n";
+}
+
+function normalizeAppState(input: Partial<AppState>): AppState {
+  const vendors = Array.isArray(input.vendors) && input.vendors.length ? input.vendors : seedStateFallback.vendors;
+  const clients = mergeSeedClients(Array.isArray(input.clients) ? input.clients : []);
+  const invoices = Array.isArray(input.invoices) ? input.invoices.map(normalizeInvoice) : seedStateFallback.invoices;
+  const invitations = mergeSeedInvitations(Array.isArray(input.invitations) ? input.invitations : []);
 
   return {
-    clients: clients.length ? clients : seedState.clients,
-    vendors: candidate.vendors.length ? candidate.vendors : seedState.vendors,
-    invoices: candidate.invoices
+    vendors,
+    clients: clients.length ? clients : seedStateFallback.clients,
+    invoices,
+    invitations: invitations.length ? invitations : seedStateFallback.invitations
   };
 }
 
 function mergeSeedClients(clients: ClientPreset[]) {
   const normalized = clients.map((client) => normalizeClientPreset(client));
   const clientIds = new Set(normalized.map((client) => client.id));
-  const missingSeedClients = seedState.clients.filter((client) => !clientIds.has(client.id));
+  const seedClients = repoSeedClients.length ? repoSeedClients : seedStateFallback.clients;
+  const missingSeedClients = seedClients.filter((client) => !clientIds.has(client.id));
 
   return [...normalized, ...missingSeedClients];
 }
@@ -252,4 +241,44 @@ function normalizeClientPreset(client: ClientPreset): ClientPreset {
     identificationNumber: client.identificationNumber ?? "",
     taxIdentificationNumber: client.taxIdentificationNumber ?? ""
   };
+}
+
+function mergeSeedInvitations(invitations: Invitation[]) {
+  const normalized = [...invitations, ...envInvitations()].map(normalizeInvitation).filter((invite) => invite.email);
+  const invitationEmails = new Set(normalized.map((invitation) => normalizeEmail(invitation.email)));
+  const missingSeedInvitations = seedStateFallback.invitations.filter(
+    (invitation) => !invitationEmails.has(normalizeEmail(invitation.email))
+  );
+
+  return [...normalized, ...missingSeedInvitations];
+}
+
+function normalizeInvitation(invitation: Invitation): Invitation {
+  return {
+    id: invitation.id || createId("invite"),
+    email: normalizeEmail(invitation.email),
+    role: invitation.role === "Owner" ? "Owner" : "Member",
+    createdAt: invitation.createdAt || new Date().toISOString()
+  };
+}
+
+function normalizeInvoice(invoice: Invoice): Invoice {
+  return {
+    ...invoice,
+    status: invoice.status === "Paid" || invoice.status === "Sent" ? invoice.status : "Draft",
+    history: Array.isArray(invoice.history) ? invoice.history : []
+  };
+}
+
+function envInvitations(): Invitation[] {
+  return (process.env.NEXT_PUBLIC_INVITED_EMAILS ?? "")
+    .split(",")
+    .map((email) => normalizeEmail(email))
+    .filter(Boolean)
+    .map((email) => ({
+      id: `invite-env-${email.replace(/[^a-z0-9]+/g, "-")}`,
+      email,
+      role: "Owner" as const,
+      createdAt: "2026-06-29T00:00:00.000Z"
+    }));
 }

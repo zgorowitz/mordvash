@@ -1,15 +1,16 @@
 "use client";
 
-import { Plus, Settings2, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Database, Plus, Settings2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { useState } from "react";
 import {
-  AppState,
+  Invitation,
   VendorPreset,
+  blankInvitation,
   blankVendorPreset,
-  safeState,
+  normalizeEmail,
   seedState,
-  storageKey
 } from "../lib/invoice-store";
+import { useAppData } from "../lib/use-app-data";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -25,33 +26,20 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
 export function SettingsManager() {
-  const [state, setState] = useState<AppState>(seedState);
-  const [ready, setReady] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const { state, setState, storageStatus } = useAppData();
+  const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
+  const [invitationDialogOpen, setInvitationDialogOpen] = useState(false);
   const [draft, setDraft] = useState<VendorPreset>(seedState.vendors[0]);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(storageKey);
-    if (saved) {
-      setState(safeState(JSON.parse(saved)));
-    }
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (ready) {
-      window.localStorage.setItem(storageKey, JSON.stringify(state));
-    }
-  }, [ready, state]);
+  const [invitationDraft, setInvitationDraft] = useState<Invitation>(blankInvitation());
 
   function openVendor(vendor: VendorPreset) {
     setDraft(vendor);
-    setDialogOpen(true);
+    setVendorDialogOpen(true);
   }
 
   function openNewVendor() {
     setDraft(blankVendorPreset());
-    setDialogOpen(true);
+    setVendorDialogOpen(true);
   }
 
   function saveVendor() {
@@ -62,7 +50,7 @@ export function SettingsManager() {
         ? current.vendors.map((vendor) => (vendor.id === draft.id ? draft : vendor))
         : [draft, ...current.vendors]
     }));
-    setDialogOpen(false);
+    setVendorDialogOpen(false);
   }
 
   function deleteVendor(id: string) {
@@ -75,55 +63,156 @@ export function SettingsManager() {
     });
   }
 
+  function openNewInvitation() {
+    setInvitationDraft(blankInvitation());
+    setInvitationDialogOpen(true);
+  }
+
+  function saveInvitation() {
+    const email = normalizeEmail(invitationDraft.email);
+    if (!email) return;
+
+    const invitation = {
+      ...invitationDraft,
+      email
+    };
+
+    setState((current) => {
+      const existing = current.invitations.some((item) => normalizeEmail(item.email) === email);
+      return {
+        ...current,
+        invitations: existing
+          ? current.invitations.map((item) => (normalizeEmail(item.email) === email ? invitation : item))
+          : [invitation, ...current.invitations]
+      };
+    });
+    setInvitationDialogOpen(false);
+  }
+
+  function deleteInvitation(id: string) {
+    setState((current) => ({
+      ...current,
+      invitations: current.invitations.filter((invitation) => invitation.id !== id || invitation.role === "Owner")
+    }));
+  }
+
   return (
     <section className="settingsShell panel">
-      <div className="sectionHeader">
-        <div>
-          <div className="panelTitle">
-            <Settings2 size={18} />
-            Vendor presets
+      <div className="settingsBlock">
+        <div className="sectionHeader">
+          <div>
+            <div className="panelTitle">
+              <Settings2 size={18} />
+              Vendor presets
+            </div>
+            <p className="smallText">Company and payment details used on invoice previews.</p>
           </div>
-          <p className="smallText">Edit the company and payment details used on invoice previews.</p>
+          <Dialog open={vendorDialogOpen} onOpenChange={setVendorDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" onClick={openNewVendor}>
+                <Plus size={15} />
+                Vendor preset
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Vendor preset</DialogTitle>
+                <DialogDescription>These details are used as the sender and payment information.</DialogDescription>
+              </DialogHeader>
+              <VendorPresetForm value={draft} onChange={setDraft} />
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button onClick={saveVendor}>Save preset</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" onClick={openNewVendor}>
-              <Plus size={15} />
-              Vendor preset
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Vendor preset</DialogTitle>
-              <DialogDescription>These details are used as the sender and payment information.</DialogDescription>
-            </DialogHeader>
-            <VendorPresetForm value={draft} onChange={setDraft} />
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              <Button onClick={saveVendor}>Save preset</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+        <div className="settingsList">
+          {state.vendors.map((vendor) => (
+            <div className="settingsRow" key={vendor.id}>
+              <button className="settingsRowMain" onClick={() => openVendor(vendor)}>
+                <strong>{vendor.name || "Unnamed vendor"}</strong>
+                <span>{vendor.email || "No email"}</span>
+                <span>{vendor.address || "No address"}</span>
+                <span>
+                  Account {vendor.account || "-"} · Routing {vendor.routing || "-"}
+                </span>
+              </button>
+              <Button size="icon" variant="ghost" onClick={() => deleteVendor(vendor.id)} title="Delete vendor">
+                <Trash2 size={15} />
+              </Button>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="settingsList">
-        {state.vendors.map((vendor) => (
-          <div className="settingsRow" key={vendor.id}>
-            <button className="settingsRowMain" onClick={() => openVendor(vendor)}>
-              <strong>{vendor.name || "Unnamed vendor"}</strong>
-              <span>{vendor.email || "No email"}</span>
-              <span>{vendor.address || "No address"}</span>
-              <span>
-                Account {vendor.account || "-"} · Routing {vendor.routing || "-"}
-              </span>
-            </button>
-            <Button size="icon" variant="ghost" onClick={() => deleteVendor(vendor.id)} title="Delete vendor">
-              <Trash2 size={15} />
-            </Button>
+      <div className="settingsBlock">
+        <div className="sectionHeader">
+          <div>
+            <div className="panelTitle">
+              <ShieldCheck size={18} />
+              Invitations
+            </div>
+            <p className="smallText">Only listed emails can open the invoice workspace after sign-in.</p>
           </div>
-        ))}
+          <Dialog open={invitationDialogOpen} onOpenChange={setInvitationDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" onClick={openNewInvitation}>
+                <UserPlus size={15} />
+                Invite email
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite email</DialogTitle>
+                <DialogDescription>Add an email address allowed to use the workspace.</DialogDescription>
+              </DialogHeader>
+              <InvitationForm value={invitationDraft} onChange={setInvitationDraft} />
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button onClick={saveInvitation}>Save invitation</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="settingsList">
+          {state.invitations.map((invitation) => (
+            <div className="settingsRow" key={invitation.id}>
+              <div className="settingsRowMain">
+                <strong>{invitation.email}</strong>
+                <span>
+                  {invitation.role} · Added {formatDate(invitation.createdAt)}
+                </span>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => deleteInvitation(invitation.id)}
+                title={invitation.role === "Owner" ? "Owner invitation stays in the repo seed" : "Delete invitation"}
+                disabled={invitation.role === "Owner"}
+              >
+                <Trash2 size={15} />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="settingsBlock">
+        <div className="panelTitle">
+          <Database size={18} />
+          Storage
+        </div>
+        <div className="storageLine">
+          <strong>{storageStatus.label}</strong>
+          <span>{storageStatus.persisted ? "Persistent" : "Browser fallback"}</span>
+        </div>
       </div>
     </section>
   );
@@ -178,4 +267,42 @@ function VendorPresetForm({
       </Label>
     </div>
   );
+}
+
+function InvitationForm({
+  value,
+  onChange
+}: {
+  value: Invitation;
+  onChange: (invitation: Invitation) => void;
+}) {
+  const update = (patch: Partial<Invitation>) => onChange({ ...value, ...patch });
+
+  return (
+    <div className="dialogGrid">
+      <Label className="spanTwo">
+        Email
+        <Input
+          type="email"
+          value={value.email}
+          onChange={(event) => update({ email: event.target.value })}
+        />
+      </Label>
+      <Label>
+        Role
+        <select
+          className="uiSelect"
+          value={value.role}
+          onChange={(event) => update({ role: event.target.value as Invitation["role"] })}
+        >
+          <option>Member</option>
+          <option>Owner</option>
+        </select>
+      </Label>
+    </div>
+  );
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString();
 }

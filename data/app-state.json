@@ -1,0 +1,93 @@
+{
+  "vendors": [
+    {
+      "id": "vendor-mordvash",
+      "name": "MORDVASH 613 INC.",
+      "email": "mordvash613@gmail.com",
+      "address": "551 Midwood St, Brooklyn, NY 11203",
+      "phone": "(929) 398 5737",
+      "terms": "Due on receipt",
+      "bank": "Bank",
+      "account": "966585561",
+      "routing": "267084131",
+      "wire": "21000021"
+    }
+  ],
+  "clients": [
+    {
+      "id": "client-encoreone",
+      "name": "EncoreOne LLC",
+      "address": "180 College Road, Monsey, NY 10952",
+      "email": "",
+      "identificationNumber": "",
+      "taxIdentificationNumber": "",
+      "bank": "",
+      "account": "",
+      "routing": "",
+      "defaultTitle": "Consulting",
+      "defaultDescription": "Administrative Support Services",
+      "defaultAmount": "5964.00",
+      "defaultTerms": "Due on receipt"
+    },
+    {
+      "id": "client-chabad-org",
+      "name": "Chabad.org",
+      "address": "784 Eastern Parkway, #405, Brooklyn, NY 11213",
+      "email": "",
+      "identificationNumber": "",
+      "taxIdentificationNumber": "",
+      "bank": "",
+      "account": "",
+      "routing": "",
+      "defaultTitle": "Setup",
+      "defaultDescription": "Data Analytics Consultant",
+      "defaultAmount": "4291.66",
+      "defaultTerms": "Due on receipt"
+    },
+    {
+      "id": "client-limestone-digital",
+      "name": "Limestone Digital s.r.o",
+      "address": "Pernerova 697-35, Karlin 186 00 Praha 8",
+      "email": "",
+      "identificationNumber": "6552706",
+      "taxIdentificationNumber": "CZ06552706",
+      "bank": "",
+      "account": "",
+      "routing": "",
+      "defaultTitle": "Setup",
+      "defaultDescription": "Business Intelligence",
+      "defaultAmount": "12750.00",
+      "defaultTerms": "Due on receipt"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "invoice-022",
+      "invoiceNumber": "022",
+      "clientId": "client-encoreone",
+      "vendorId": "vendor-mordvash",
+      "date": "2026-06-29",
+      "terms": "Due on receipt",
+      "title": "Consulting",
+      "description": "Administrative Support Services",
+      "amount": "5964.00",
+      "status": "Sent",
+      "notes": "",
+      "history": [
+        {
+          "id": "history-imported",
+          "at": "2026-06-29T15:37:00.000Z",
+          "message": "Imported starter invoice."
+        }
+      ]
+    }
+  ],
+  "invitations": [
+    {
+      "id": "invite-owner",
+      "email": "zgorowitz@gmail.com",
+      "role": "Owner",
+      "createdAt": "2026-06-29T00:00:00.000Z"
+    }
+  ]
+}

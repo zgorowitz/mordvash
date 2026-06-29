@@ -1,4 +1,5 @@
-import { UserButton } from "@clerk/nextjs";
+import { SignOutButton, UserButton } from "@clerk/nextjs";
+import { LogOut } from "lucide-react";
 import Link from "next/link";
 
 const hasClerkKey = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
@@ -13,7 +14,17 @@ export function AppTopbar({ title }: { title: string }) {
       <nav className="topnav" aria-label="Primary">
         <Link href="/">Invoices</Link>
         <Link href="/settings">Settings</Link>
-        {hasClerkKey && <UserButton />}
+        {hasClerkKey && (
+          <>
+            <SignOutButton redirectUrl="/">
+              <button className="topbarLogout">
+                <LogOut size={14} />
+                Log out
+              </button>
+            </SignOutButton>
+            <UserButton />
+          </>
+        )}
       </nav>
     </header>
   );

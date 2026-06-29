@@ -1,4 +1,5 @@
 import { Show, SignInButton } from "@clerk/nextjs";
+import { AccessGate } from "../components/access-gate";
 import { AppTopbar } from "../components/app-topbar";
 import { SettingsManager } from "../components/settings-manager";
 
@@ -33,7 +34,9 @@ export default function SettingsPage() {
     <main>
       <Show when="signed-in" fallback={signedOutView}>
         <AppTopbar title="Settings" />
-        <SettingsManager />
+        <AccessGate>
+          <SettingsManager />
+        </AccessGate>
       </Show>
     </main>
   );

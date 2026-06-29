@@ -2,19 +2,17 @@
 
 import { Download, FileText, Plus, Save, Trash2 } from "lucide-react";
 import type { MouseEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AppState,
   ClientPreset,
   Invoice,
   VendorPreset,
   blankClientPreset,
   createInvoiceForClient,
-  safeState,
-  seedState,
-  storageKey
+  seedState
 } from "../lib/invoice-store";
 import { createInvoicePdfFile, downloadInvoicePdf } from "../lib/invoice-pdf";
+import { useAppData } from "../lib/use-app-data";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -31,39 +29,30 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 
 export function InvoiceWorkspace() {
-  const [state, setState] = useState<AppState>(seedState);
-  const [ready, setReady] = useState(false);
+  const { state, setState, ready } = useAppData();
   const [activeClientId, setActiveClientId] = useState(seedState.clients[0].id);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(seedState.invoices[0].id);
   const [draft, setDraft] = useState<Invoice>(seedState.invoices[0]);
   const [clientDraft, setClientDraft] = useState<ClientPreset>(blankClientPreset());
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const initializedSelection = useRef(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(storageKey);
-    if (saved) {
-      let parsed = safeState(JSON.parse(saved));
-      const firstClient = parsed.clients[0] ?? seedState.clients[0];
-      let firstInvoice = parsed.invoices.find((invoice) => invoice.clientId === firstClient.id) ?? parsed.invoices[0];
+    if (!ready || initializedSelection.current) return;
 
-      if (!firstInvoice) {
-        firstInvoice = createInvoiceForClient(firstClient, parsed.vendors[0]?.id ?? "", parsed.invoices);
-        parsed = { ...parsed, invoices: [firstInvoice] };
-      }
+    const firstClient = state.clients[0] ?? seedState.clients[0];
+    let firstInvoice = state.invoices.find((invoice) => invoice.clientId === firstClient.id) ?? state.invoices[0];
 
-      setState(parsed);
-      setActiveClientId(firstClient.id);
-      setSelectedInvoiceId(firstInvoice.id);
-      setDraft(firstInvoice);
+    if (!firstInvoice) {
+      firstInvoice = createInvoiceForClient(firstClient, state.vendors[0]?.id ?? "", state.invoices);
+      setState((current) => ({ ...current, invoices: [firstInvoice, ...current.invoices] }));
     }
-    setReady(true);
-  }, []);
 
-  useEffect(() => {
-    if (ready) {
-      window.localStorage.setItem(storageKey, JSON.stringify(state));
-    }
-  }, [ready, state]);
+    setActiveClientId(firstClient.id);
+    setSelectedInvoiceId(firstInvoice.id);
+    setDraft(firstInvoice);
+    initializedSelection.current = true;
+  }, [ready, setState, state.clients, state.invoices, state.vendors]);
 
   const activeClient = state.clients.find((client) => client.id === activeClientId) ?? state.clients[0];
   const selectedVendor = state.vendors.find((vendor) => vendor.id === draft.vendorId) ?? state.vendors[0];
@@ -281,6 +270,18 @@ export function InvoiceWorkspace() {
           <Label>
             Amount
             <Input value={draft.amount} onChange={(event) => updateDraft({ amount: event.target.value })} />
+          </Label>
+          <Label>
+            Status
+            <select
+              className="uiSelect"
+              value={draft.status}
+              onChange={(event) => updateDraft({ status: event.target.value as Invoice["status"] })}
+            >
+              <option>Draft</option>
+              <option>Sent</option>
+              <option>Paid</option>
+            </select>
           </Label>
           <Label>
             Description
