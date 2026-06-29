@@ -15,6 +15,13 @@ export async function GET() {
   const mode = storageMode();
 
   if (mode === "github") {
+    if (!githubConfig()) {
+      return NextResponse.json({
+        state: seedState,
+        storage: storageStatus("browser", false, "GitHub token missing")
+      });
+    }
+
     const githubState = await readGithubState();
     if (githubState) {
       return NextResponse.json({
@@ -22,6 +29,11 @@ export async function GET() {
         storage: storageStatus("github", true, "GitHub repo data")
       });
     }
+
+    return NextResponse.json({
+      state: seedState,
+      storage: storageStatus("browser", false, "GitHub read failed")
+    });
   }
 
   if (mode === "file") {
@@ -43,12 +55,22 @@ export async function PUT(request: Request) {
   const mode = storageMode();
 
   if (mode === "github") {
+    if (!githubConfig()) {
+      return NextResponse.json({
+        storage: storageStatus("browser", false, "GitHub token missing")
+      });
+    }
+
     const saved = await writeGithubState(state);
     if (saved) {
       return NextResponse.json({
         storage: storageStatus("github", true, "Saved to GitHub")
       });
     }
+
+    return NextResponse.json({
+      storage: storageStatus("browser", false, "GitHub save failed")
+    });
   }
 
   if (mode === "file") {

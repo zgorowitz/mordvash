@@ -29,7 +29,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 
 export function InvoiceWorkspace() {
-  const { state, setState, ready } = useAppData();
+  const { state, setState, ready, storageStatus } = useAppData();
   const [activeClientId, setActiveClientId] = useState(seedState.clients[0].id);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(seedState.invoices[0].id);
   const [draft, setDraft] = useState<Invoice>(seedState.invoices[0]);
@@ -244,6 +244,10 @@ export function InvoiceWorkspace() {
               <Trash2 size={15} />
             </Button>
           </div>
+        </div>
+        <div className={storageStatus.persisted ? "storageNotice" : "storageNotice warning"}>
+          <span>Storage</span>
+          <strong>{storageStatus.label}</strong>
         </div>
 
         <div className="simpleForm">
