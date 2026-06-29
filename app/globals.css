@@ -1,0 +1,287 @@
+:root {
+  color: #162033;
+  background: #f5f6f8;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f5f6f8;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+main {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.topbar,
+.signInView {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: 1440px;
+  margin: 0 auto 18px;
+}
+
+.signInView {
+  min-height: 72vh;
+  align-items: center;
+}
+
+.signInView h1,
+.topbar h1 {
+  margin: 2px 0 0;
+  font-size: 28px;
+}
+
+.signInView p {
+  max-width: 520px;
+  color: #617084;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #283592;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.authNotice {
+  max-width: 1440px;
+  margin: 0 auto 16px;
+  padding: 12px 14px;
+  border: 1px solid #d7dae2;
+  background: #fff;
+  color: #435063;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 190px minmax(220px, 300px) minmax(420px, 1fr) minmax(260px, 320px);
+  gap: 14px;
+  max-width: 1440px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #dfe3ea;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.panelTitle,
+.sectionHeader,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panelTitle {
+  color: #263246;
+  font-weight: 700;
+}
+
+.sectionHeader {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.folderList,
+.invoiceRows,
+.compactForm,
+.historyList,
+.sideStack {
+  display: grid;
+  gap: 8px;
+}
+
+.folderButton,
+.invoiceRow {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #263246;
+  text-align: left;
+}
+
+.folderButton.active,
+.invoiceRow.active {
+  border-color: #bec7dd;
+  background: #eef2ff;
+}
+
+.folderButton span:last-child {
+  color: #617084;
+}
+
+.invoiceRow small,
+.historyItem span,
+.muted {
+  display: block;
+  color: #69778c;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.invoiceRow span:last-child {
+  text-align: right;
+}
+
+.inlineForm {
+  display: grid;
+  grid-template-columns: 1fr 36px;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid #cfd5df;
+  border-radius: 6px;
+  background: #fff;
+  color: #162033;
+  padding: 9px 10px;
+}
+
+textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: #49576b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.formGrid label:nth-last-child(-n + 2) {
+  grid-column: span 2;
+}
+
+.primaryButton,
+.smallButton,
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #283592;
+  border-radius: 6px;
+  background: #283592;
+  color: #fff;
+  min-height: 36px;
+  padding: 8px 12px;
+  font-weight: 700;
+}
+
+.smallButton {
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.iconButton {
+  width: 36px;
+  padding: 0;
+}
+
+.iconButton.danger {
+  border-color: #c2410c;
+  background: #c2410c;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.vendorSummary {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #dfe3ea;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #58667a;
+  font-size: 13px;
+}
+
+.vendorSummary strong {
+  color: #162033;
+}
+
+.historyItem {
+  border-left: 3px solid #bec7dd;
+  padding: 2px 0 2px 10px;
+}
+
+@media (max-width: 1180px) {
+  .workspace {
+    grid-template-columns: 180px 1fr;
+  }
+
+  .editorPanel,
+  .sideStack {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 720px) {
+  main {
+    padding: 14px;
+  }
+
+  .workspace,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .editorPanel .formGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formGrid label:nth-last-child(-n + 2) {
+    grid-column: span 1;
+  }
+
+  .editorPanel,
+  .sideStack {
+    grid-column: span 1;
+  }
+}
