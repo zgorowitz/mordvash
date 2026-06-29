@@ -1,17 +1,20 @@
 "use client";
 
-import { FileText, Plus, Save, Trash2 } from "lucide-react";
+import { Download, FileText, Plus, Save, Trash2 } from "lucide-react";
+import type { MouseEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   AppState,
   ClientPreset,
   Invoice,
+  VendorPreset,
   blankClientPreset,
   createInvoiceForClient,
   safeState,
   seedState,
   storageKey
 } from "../lib/invoice-store";
+import { createInvoicePdfFile, downloadInvoicePdf } from "../lib/invoice-pdf";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -232,7 +235,7 @@ export function InvoiceWorkspace() {
             <FileText size={18} />
             PDF preview
           </div>
-          <span className="muted">Invoice {draft.invoiceNumber}</span>
+          <PdfDownloadButton invoice={draft} client={activeClient} vendor={selectedVendor} />
         </div>
         <InvoicePreview invoice={draft} client={activeClient} vendor={selectedVendor} />
       </section>
@@ -306,6 +309,55 @@ export function InvoiceWorkspace() {
   );
 }
 
+function PdfDownloadButton({
+  invoice,
+  client,
+  vendor
+}: {
+  invoice: Invoice;
+  client?: ClientPreset;
+  vendor?: VendorPreset;
+}) {
+  const [downloadFile, setDownloadFile] = useState<{ url: string; fileName: string }>();
+
+  useEffect(() => {
+    let active = true;
+    let currentUrl = "";
+
+    setDownloadFile(undefined);
+    createInvoicePdfFile({ invoice, client, vendor }).then(({ blob, fileName }) => {
+      if (!active) return;
+      currentUrl = URL.createObjectURL(blob);
+      setDownloadFile({ url: currentUrl, fileName });
+    });
+
+    return () => {
+      active = false;
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    };
+  }, [invoice, client, vendor]);
+
+  async function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (downloadFile) return;
+    event.preventDefault();
+    await downloadInvoicePdf({ invoice, client, vendor });
+  }
+
+  return (
+    <a
+      className="uiButton uiButtonOutline uiButtonSmall"
+      download={downloadFile?.fileName}
+      href={downloadFile?.url ?? "#"}
+      onClick={handleClick}
+    >
+      <Download size={15} />
+      PDF
+    </a>
+  );
+}
+
 function ClientPresetForm({
   value,
   onChange
@@ -328,6 +380,20 @@ function ClientPresetForm({
       <Label className="spanTwo">
         Address
         <Input value={value.address} onChange={(event) => update({ address: event.target.value })} />
+      </Label>
+      <Label>
+        Identification number
+        <Input
+          value={value.identificationNumber}
+          onChange={(event) => update({ identificationNumber: event.target.value })}
+        />
+      </Label>
+      <Label>
+        Tax identification
+        <Input
+          value={value.taxIdentificationNumber}
+          onChange={(event) => update({ taxIdentificationNumber: event.target.value })}
+        />
       </Label>
       <Label>
         Bank
@@ -371,41 +437,59 @@ function InvoicePreview({
 }: {
   invoice: Invoice;
   client?: ClientPreset;
-  vendor?: { name: string; email: string; address: string; phone: string; bank: string; account: string; routing: string; wire: string };
+  vendor?: VendorPreset;
 }) {
   return (
     <div className="invoicePreview">
       <div className="previewHeader">
-        <div>
+        <div className="previewSender">
           <strong>{vendor?.name}</strong>
           <span>{vendor?.email}</span>
-          <span>{vendor?.address}</span>
+          {splitAddress(vendor?.address).map((line) => (
+            <span key={line}>{line}</span>
+          ))}
           <span>{vendor?.phone}</span>
         </div>
         <div className="previewMeta">
           <h2>INVOICE</h2>
-          <span>#{invoice.invoiceNumber}</span>
-          <span>{formatDate(invoice.date)}</span>
-          <span>{invoice.terms}</span>
+          <dl>
+            <div>
+              <dt>Invoice #</dt>
+              <dd>{invoice.invoiceNumber}</dd>
+            </div>
+            <div>
+              <dt>Date</dt>
+              <dd>{formatDate(invoice.date)}</dd>
+            </div>
+            <div>
+              <dt>Payment Terms</dt>
+              <dd>{invoice.terms}</dd>
+            </div>
+          </dl>
         </div>
       </div>
 
-      <div className="previewBoxes">
-        <section>
+      <div className="previewInfoGrid">
+        <section className="previewSection">
           <h3>Bill To</h3>
           <strong>{client?.name}</strong>
-          <span>{client?.address}</span>
+          {splitAddress(client?.address).map((line) => (
+            <span key={line}>{line}</span>
+          ))}
           <span>{client?.email}</span>
-          {client?.bank && <span>Bank: {client.bank}</span>}
-          {client?.account && <span>Account: {client.account}</span>}
-          {client?.routing && <span>Routing: {client.routing}</span>}
+          <PreviewDetail label="Identification Number" value={client?.identificationNumber} />
+          <PreviewDetail label="Tax Identification Number" value={client?.taxIdentificationNumber} />
+          <PreviewDetail label="Bank" value={client?.bank} />
+          <PreviewDetail label="Account" value={client?.account} />
+          <PreviewDetail label="Routing" value={client?.routing} />
         </section>
-        <section>
-          <h3>Payment</h3>
-          <strong>{vendor?.bank}</strong>
-          <span>Account {vendor?.account}</span>
-          <span>Routing {vendor?.routing}</span>
-          <span>Wire {vendor?.wire}</span>
+        <section className="previewSection">
+          <h3>Payment Details</h3>
+          <PreviewDetail label="Bank" value={vendor?.bank} />
+          <PreviewDetail label="Account Number" value={vendor?.account} />
+          <PreviewDetail label="Routing Number" value={vendor?.routing} />
+          <PreviewDetail label="Wire Transfers" value={vendor?.wire} />
+          <PreviewDetail label="Terms" value={invoice.terms} />
         </section>
       </div>
 
@@ -438,6 +522,17 @@ function InvoicePreview({
   );
 }
 
+function PreviewDetail({ label, value }: { label: string; value?: string }) {
+  if (!value) return null;
+
+  return (
+    <div className="previewDetail">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 function currency(value: string) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "$0.00";
@@ -447,4 +542,11 @@ function currency(value: string) {
 function formatDate(value: string) {
   if (!value) return "";
   return new Date(`${value}T00:00:00`).toLocaleDateString();
+}
+
+function splitAddress(address?: string) {
+  return (address || "")
+    .split(",")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }

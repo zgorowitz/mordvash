@@ -16,6 +16,8 @@ export type ClientPreset = {
   name: string;
   address: string;
   email: string;
+  identificationNumber: string;
+  taxIdentificationNumber: string;
   bank: string;
   account: string;
   routing: string;
@@ -75,12 +77,44 @@ export const seedState: AppState = {
       name: "EncoreOne LLC",
       address: "180 College Road, Monsey, NY 10952",
       email: "",
+      identificationNumber: "",
+      taxIdentificationNumber: "",
       bank: "",
       account: "",
       routing: "",
       defaultTitle: "Consulting",
       defaultDescription: "Administrative Support Services",
       defaultAmount: "5964.00",
+      defaultTerms: "Due on receipt"
+    },
+    {
+      id: "client-chabad-org",
+      name: "Chabad.org",
+      address: "784 Eastern Parkway, #405, Brooklyn, NY 11213",
+      email: "",
+      identificationNumber: "",
+      taxIdentificationNumber: "",
+      bank: "",
+      account: "",
+      routing: "",
+      defaultTitle: "Setup",
+      defaultDescription: "Data Analytics Consultant",
+      defaultAmount: "4291.66",
+      defaultTerms: "Due on receipt"
+    },
+    {
+      id: "client-limestone-digital",
+      name: "Limestone Digital s.r.o",
+      address: "Pernerova 697-35, Karlin 186 00 Praha 8",
+      email: "",
+      identificationNumber: "6552706",
+      taxIdentificationNumber: "CZ06552706",
+      bank: "",
+      account: "",
+      routing: "",
+      defaultTitle: "Setup",
+      defaultDescription: "Business Intelligence",
+      defaultAmount: "12750.00",
       defaultTerms: "Due on receipt"
     }
   ],
@@ -173,6 +207,8 @@ export function blankClientPreset(): ClientPreset {
     name: "",
     address: "",
     email: "",
+    identificationNumber: "",
+    taxIdentificationNumber: "",
     bank: "",
     account: "",
     routing: "",
@@ -193,9 +229,27 @@ export function safeState(input: unknown): AppState {
     return seedState;
   }
 
+  const clients = mergeSeedClients(candidate.clients);
+
   return {
-    clients: candidate.clients.length ? candidate.clients : seedState.clients,
+    clients: clients.length ? clients : seedState.clients,
     vendors: candidate.vendors.length ? candidate.vendors : seedState.vendors,
     invoices: candidate.invoices
+  };
+}
+
+function mergeSeedClients(clients: ClientPreset[]) {
+  const normalized = clients.map((client) => normalizeClientPreset(client));
+  const clientIds = new Set(normalized.map((client) => client.id));
+  const missingSeedClients = seedState.clients.filter((client) => !clientIds.has(client.id));
+
+  return [...normalized, ...missingSeedClients];
+}
+
+function normalizeClientPreset(client: ClientPreset): ClientPreset {
+  return {
+    ...client,
+    identificationNumber: client.identificationNumber ?? "",
+    taxIdentificationNumber: client.taxIdentificationNumber ?? ""
   };
 }

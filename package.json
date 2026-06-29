@@ -10,6 +10,7 @@
   "dependencies": {
     "@clerk/nextjs": "latest",
     "@radix-ui/react-dialog": "^1.1.17",
+    "jspdf": "^4.2.1",
     "lucide-react": "latest",
     "next": "latest",
     "react": "latest",

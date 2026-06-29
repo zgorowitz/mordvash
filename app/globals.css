@@ -1,12 +1,12 @@
 :root {
-  --page: #f2eee6;
-  --paper: #fffdf8;
-  --surface: #f8f5ee;
-  --line: #d6d0c4;
-  --line-strong: #a9a094;
-  --ink: #25231f;
-  --muted: #716b62;
-  --soft: #ebe5da;
+  --page: #eee9df;
+  --paper: #fffaf1;
+  --surface: #f6f1e8;
+  --line: #d2cbc0;
+  --line-strong: #9d978f;
+  --ink: #24221f;
+  --muted: #706a61;
+  --soft: #e9e3d7;
   background: var(--page);
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
@@ -75,10 +75,9 @@ main {
 }
 
 .topnav a {
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  padding: 8px 10px;
-  background: var(--surface);
+  border-bottom: 1px solid var(--line-strong);
+  padding: 7px 0;
+  background: transparent;
 }
 
 .eyebrow,
@@ -256,7 +255,13 @@ main {
   gap: 7px;
   border-radius: 6px;
   font-weight: 800;
+  outline: none;
   transition: background 120ms ease, color 120ms ease;
+}
+
+.uiButton:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .uiButtonDefault,
@@ -394,7 +399,8 @@ main {
 
 .invoicePreview {
   display: grid;
-  gap: 18px;
+  grid-template-rows: auto auto auto 1fr auto auto;
+  gap: 22px;
   width: 100%;
   min-height: 0;
   border: 1px solid var(--line-strong);
@@ -407,11 +413,11 @@ main {
 }
 
 .previewHeader,
-.previewBoxes,
+.previewInfoGrid,
 .previewTotal {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px;
+  gap: 28px;
 }
 
 .previewHeader {
@@ -420,12 +426,12 @@ main {
 }
 
 .previewHeader > *,
-.previewBoxes > * {
+.previewInfoGrid > * {
   min-width: 0;
 }
 
 .previewHeader span,
-.previewBoxes span,
+.previewInfoGrid span,
 .previewNotes span {
   display: block;
   color: var(--muted);
@@ -438,20 +444,61 @@ main {
 }
 
 .previewMeta h2 {
-  margin: 0 0 20px;
-  font-size: 18px;
+  margin: 0 0 22px;
+  font-size: 22px;
   letter-spacing: 0;
 }
 
-.previewBoxes section {
-  min-height: 120px;
-  border-top: 1px solid var(--line-strong);
-  padding: 12px 0 0;
+.previewMeta dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
 }
 
-.previewBoxes h3 {
+.previewMeta dl div,
+.previewDetail {
+  display: grid;
+  grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.previewMeta dt,
+.previewDetail span {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.previewMeta dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.previewSection {
+  min-height: 124px;
+  border-top: 1px solid var(--line-strong);
+  padding-top: 12px;
+}
+
+.previewSection h3 {
   margin: 0 0 10px;
   font-size: 14px;
+}
+
+.previewDetail {
+  border-bottom: 1px solid var(--line);
+  padding: 7px 0;
+}
+
+.previewDetail strong {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  text-align: right;
+  word-break: break-word;
 }
 
 .previewTable {
@@ -463,17 +510,22 @@ main {
 
 .previewTable th,
 .previewTable td {
-  border-bottom: 1px solid var(--line-strong);
-  padding: 9px 6px;
+  border: 1px solid var(--line);
+  padding: 10px 9px;
   text-align: left;
   vertical-align: top;
   word-break: break-word;
   font-size: 12px;
 }
 
+.previewTable th {
+  background: var(--soft);
+  color: var(--ink);
+}
+
 .previewTable th:first-child,
 .previewTable td:first-child {
-  width: 22%;
+  width: 25%;
 }
 
 .previewTable th:last-child,
@@ -485,8 +537,10 @@ main {
 
 .previewTotal {
   align-self: end;
-  border-top: 1px solid var(--line-strong);
-  border-bottom: 1px solid var(--line-strong);
+  justify-self: end;
+  width: min(280px, 100%);
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
   padding: 12px 0;
   font-size: 16px;
 }
@@ -537,10 +591,15 @@ main {
   }
 
   .previewHeader,
-  .previewBoxes,
+  .previewInfoGrid,
   .previewTotal,
   .dialogGrid {
     grid-template-columns: 1fr;
+  }
+
+  .previewTotal {
+    justify-self: stretch;
+    width: 100%;
   }
 
   .spanTwo {
