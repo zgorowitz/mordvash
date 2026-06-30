@@ -17,10 +17,10 @@ const page = {
   margin: 54
 };
 
-const ink = "#24221f";
-const muted = "#706a61";
-const line = "#cfc8ba";
-const soft = "#f4efe5";
+const ink = "#1f1f1f";
+const muted = "#666666";
+const line = "#c7c7c7";
+const soft = "#f3f3f3";
 
 export async function downloadInvoicePdf({ invoice, client, vendor }: DownloadInvoicePdfInput) {
   const { blob, fileName } = await createInvoicePdfFile({ invoice, client, vendor });
@@ -60,7 +60,7 @@ export async function createInvoicePdfFile({ invoice, client, vendor }: Download
 }
 
 function drawPageBackground(doc: import("jspdf").jsPDF) {
-  doc.setFillColor("#fffaf1");
+  doc.setFillColor("#ffffff");
   doc.rect(0, 0, page.width, page.height, "F");
   doc.setDrawColor(line);
   doc.setLineWidth(0.8);
@@ -158,7 +158,7 @@ function drawLineItems(doc: import("jspdf").jsPDF, invoice: Invoice) {
 
   const rowY = y + 30;
   const rowH = 58;
-  doc.setFillColor("#fffaf1");
+  doc.setFillColor("#ffffff");
   doc.rect(x, rowY, w, rowH, "FD");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);

@@ -150,7 +150,7 @@ main {
 
 .workspace {
   display: grid;
-  grid-template-columns: 240px minmax(520px, 1fr) 300px;
+  grid-template-columns: 240px 310px minmax(520px, 1fr);
   gap: 0;
   max-width: 1500px;
   margin: 0 auto;
@@ -167,13 +167,14 @@ main {
 }
 
 .clientPanel,
-.previewPanel {
+.editorPanel {
   border-right: 1px solid var(--line);
 }
 
 .sectionHeader,
 .panelTitle,
-.actions {
+.actions,
+.clientActions {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -190,6 +191,10 @@ main {
 
 .panelTitle {
   font-weight: 800;
+}
+
+.clientActions {
+  justify-content: flex-end;
 }
 
 .clientList,
@@ -249,6 +254,41 @@ main {
 
 .readonlyLine span {
   color: var(--muted);
+}
+
+.editorPanel {
+  background: rgb(255 250 241 / 34%);
+}
+
+.editorPanel .sectionHeader {
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.editorPanel .simpleForm {
+  gap: 6px;
+}
+
+.editorPanel .uiLabel {
+  gap: 3px;
+  font-size: 11px;
+}
+
+.editorPanel .uiInput,
+.editorPanel .uiSelect,
+.editorPanel .uiTextarea {
+  border-bottom-color: var(--ink);
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.editorPanel .uiTextarea {
+  min-height: 64px;
+}
+
+.editorPanel .readonlyLine {
+  padding: 7px 0;
 }
 
 .historyBlock {
@@ -649,8 +689,8 @@ main {
     grid-template-columns: 240px 1fr;
   }
 
-  .editorPanel {
-    grid-column: 2;
+  .previewPanel {
+    grid-column: 1 / -1;
   }
 }
 
@@ -670,6 +710,13 @@ main {
     grid-template-columns: 1fr;
   }
 
+  .clientPanel,
+  .editorPanel {
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
+  }
+
+  .previewPanel,
   .editorPanel {
     grid-column: auto;
   }

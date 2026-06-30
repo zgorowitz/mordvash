@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileText, Plus, Save, Trash2 } from "lucide-react";
+import { Download, FileText, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -34,7 +34,9 @@ export function InvoiceWorkspace() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(seedState.invoices[0].id);
   const [draft, setDraft] = useState<Invoice>(seedState.invoices[0]);
   const [clientDraft, setClientDraft] = useState<ClientPreset>(blankClientPreset());
+  const [editClientDraft, setEditClientDraft] = useState<ClientPreset>(blankClientPreset());
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [editClientDialogOpen, setEditClientDialogOpen] = useState(false);
   const initializedSelection = useRef(false);
 
   useEffect(() => {
@@ -99,6 +101,26 @@ export function InvoiceWorkspace() {
     setClientDialogOpen(false);
   }
 
+  function openEditClient(open: boolean) {
+    if (open && activeClient) {
+      setEditClientDraft({ ...activeClient });
+    }
+    setEditClientDialogOpen(open);
+  }
+
+  function saveClient() {
+    const name = editClientDraft.name.trim();
+    if (!name) return;
+
+    const updated = { ...editClientDraft, name };
+    setState((current) => ({
+      ...current,
+      clients: current.clients.map((client) => (client.id === updated.id ? updated : client))
+    }));
+    setActiveClientId(updated.id);
+    setEditClientDialogOpen(false);
+  }
+
   function newInvoice() {
     if (!activeClient) return;
     const invoice = createInvoiceForClient(activeClient, state.vendors[0]?.id ?? "", state.invoices);
@@ -150,33 +172,59 @@ export function InvoiceWorkspace() {
       <aside className="clientPanel panel">
         <div className="sectionHeader">
           <div className="panelTitle">Clients</div>
-          <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <Plus size={15} />
-                Client
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add client</DialogTitle>
-                <DialogDescription>
-                  This creates a client folder and a first invoice from the preset.
-                </DialogDescription>
-              </DialogHeader>
-              <ClientPresetForm value={clientDraft} onChange={setClientDraft} />
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                </DialogClose>
-                <Button type="button" onClick={addClient}>
-                  Add client
+          <div className="clientActions">
+            <Dialog open={editClientDialogOpen} onOpenChange={openEditClient}>
+              <DialogTrigger asChild>
+                <Button size="icon" variant="outline" disabled={!activeClient} title="Edit selected client">
+                  <Pencil size={15} />
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit client</DialogTitle>
+                  <DialogDescription>Update the selected client preset and billing details.</DialogDescription>
+                </DialogHeader>
+                <ClientPresetForm value={editClientDraft} onChange={setEditClientDraft} />
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button type="button" onClick={saveClient}>
+                    Save client
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Plus size={15} />
+                  Client
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add client</DialogTitle>
+                  <DialogDescription>
+                    This creates a client folder and a first invoice from the preset.
+                  </DialogDescription>
+                </DialogHeader>
+                <ClientPresetForm value={clientDraft} onChange={setClientDraft} />
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button type="button" onClick={addClient}>
+                    Add client
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="clientList">
@@ -218,22 +266,11 @@ export function InvoiceWorkspace() {
         </div>
       </aside>
 
-      <section className="previewPanel panel">
-        <div className="sectionHeader">
-          <div className="panelTitle">
-            <FileText size={18} />
-            PDF preview
-          </div>
-          <PdfDownloadButton invoice={draft} client={activeClient} vendor={selectedVendor} />
-        </div>
-        <InvoicePreview invoice={draft} client={activeClient} vendor={selectedVendor} />
-      </section>
-
       <section className="editorPanel panel">
         <div className="sectionHeader">
           <div>
-            <div className="panelTitle">Invoice form</div>
-            <p className="smallText">ID is generated automatically.</p>
+            <div className="panelTitle">Edit invoice</div>
+            <p className="smallText">Invoice ID is automatic.</p>
           </div>
           <div className="actions">
             <Button size="sm" variant="outline" onClick={saveInvoice}>
@@ -309,6 +346,17 @@ export function InvoiceWorkspace() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="previewPanel panel">
+        <div className="sectionHeader">
+          <div className="panelTitle">
+            <FileText size={18} />
+            PDF preview
+          </div>
+          <PdfDownloadButton invoice={draft} client={activeClient} vendor={selectedVendor} />
+        </div>
+        <InvoicePreview invoice={draft} client={activeClient} vendor={selectedVendor} />
       </section>
     </div>
   );
