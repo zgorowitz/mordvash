@@ -147,31 +147,6 @@
       ]
     },
     {
-      "id": "invoice-ba84f6de-2ef5-4b62-a0e6-42561061cb34",
-      "invoiceNumber": "025",
-      "clientId": "client-chabad-org",
-      "vendorId": "vendor-mordvash",
-      "date": "2026-07-08",
-      "terms": "Due on receipt",
-      "title": "Setup",
-      "description": "Data Analytics Consultant",
-      "amount": "4291.66",
-      "status": "Draft",
-      "notes": "",
-      "history": [
-        {
-          "id": "history-1783473232799",
-          "at": "2026-07-08T01:13:52.799Z",
-          "message": "Invoice details saved."
-        },
-        {
-          "id": "history-8f3102cf-67b5-4ef1-8d9e-c828e1840543",
-          "at": "2026-07-08T01:13:41.231Z",
-          "message": "Invoice created from client preset."
-        }
-      ]
-    },
-    {
       "id": "invoice-533b013d-78c5-422f-83fe-0b4d850d706e",
       "invoiceNumber": "024",
       "clientId": "client-limestone-digital",
