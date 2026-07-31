@@ -62,6 +62,26 @@
   ],
   "invoices": [
     {
+      "id": "invoice-b85a6595-34dd-4296-81a9-7128e8ddfcd7",
+      "invoiceNumber": "031",
+      "clientId": "client-encoreone",
+      "vendorId": "vendor-mordvash",
+      "date": "2026-07-31",
+      "terms": "Due on receipt",
+      "title": "Consulting",
+      "description": "Administrative Support Services",
+      "amount": "5964.00",
+      "status": "Draft",
+      "notes": "",
+      "history": [
+        {
+          "id": "history-4a2c31b8-8eaa-47fe-b737-166fa2f65ef2",
+          "at": "2026-07-31T03:41:58.467Z",
+          "message": "Invoice created from client preset."
+        }
+      ]
+    },
+    {
       "id": "invoice-b11dae61-7e15-48c1-8ffb-0b986490bd7c",
       "invoiceNumber": "030",
       "clientId": "client-chabad-org",
