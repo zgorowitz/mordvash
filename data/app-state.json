@@ -15,6 +15,21 @@
   ],
   "clients": [
     {
+      "id": "client-85fe31e7-958e-4c0b-b68d-6ed7cc7bf913",
+      "name": "My Conseil",
+      "address": "26 Rue d'Hautpoul, 75019 Paris, France",
+      "email": "",
+      "identificationNumber": "",
+      "taxIdentificationNumber": "",
+      "bank": "",
+      "account": "",
+      "routing": "",
+      "defaultTitle": "",
+      "defaultDescription": "",
+      "defaultAmount": "",
+      "defaultTerms": "Due on receipt"
+    },
+    {
       "id": "client-encoreone",
       "name": "EncoreOne LLC",
       "address": "180 College Road, Monsey, NY 10952",
@@ -61,6 +76,26 @@
     }
   ],
   "invoices": [
+    {
+      "id": "invoice-47f3ba90-5e18-47e5-b439-1c0b0c2f9d26",
+      "invoiceNumber": "034",
+      "clientId": "client-85fe31e7-958e-4c0b-b68d-6ed7cc7bf913",
+      "vendorId": "vendor-mordvash",
+      "date": "2026-08-03",
+      "terms": "Due on receipt",
+      "title": "",
+      "description": "",
+      "amount": "",
+      "status": "Draft",
+      "notes": "",
+      "history": [
+        {
+          "id": "history-6d7f9ecd-81c4-4c05-a35b-299f5fa276b1",
+          "at": "2026-08-03T02:44:56.918Z",
+          "message": "Invoice created from client preset."
+        }
+      ]
+    },
     {
       "id": "invoice-06acdfdf-9adf-4ae5-aef5-af55fbff44ba",
       "invoiceNumber": "033",
