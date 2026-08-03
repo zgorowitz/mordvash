@@ -75,6 +75,11 @@
       "notes": "",
       "history": [
         {
+          "id": "history-1785724999054",
+          "at": "2026-08-03T02:43:19.054Z",
+          "message": "Invoice details saved."
+        },
+        {
           "id": "history-47434cf5-fe56-4422-b35e-3a9449f22b73",
           "at": "2026-08-03T02:43:13.623Z",
           "message": "Invoice created from client preset."
