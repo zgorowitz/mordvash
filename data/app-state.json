@@ -62,6 +62,26 @@
   ],
   "invoices": [
     {
+      "id": "invoice-6cb7dc68-0b95-4406-8e41-b1c307ae5366",
+      "invoiceNumber": "032",
+      "clientId": "client-limestone-digital",
+      "vendorId": "vendor-mordvash",
+      "date": "2026-08-03",
+      "terms": "Due on receipt",
+      "title": "Setup",
+      "description": "Business Intelligence",
+      "amount": "12750.00",
+      "status": "Draft",
+      "notes": "",
+      "history": [
+        {
+          "id": "history-8986f4ce-adec-4efd-a002-f1da5e425762",
+          "at": "2026-08-03T02:42:22.057Z",
+          "message": "Invoice created from client preset."
+        }
+      ]
+    },
+    {
       "id": "invoice-b85a6595-34dd-4296-81a9-7128e8ddfcd7",
       "invoiceNumber": "031",
       "clientId": "client-encoreone",
