@@ -85,10 +85,15 @@
       "terms": "Due on receipt",
       "title": "",
       "description": "",
-      "amount": "",
+      "amount": "10125",
       "status": "Draft",
       "notes": "",
       "history": [
+        {
+          "id": "history-1785725129149",
+          "at": "2026-08-03T02:45:29.149Z",
+          "message": "Invoice details saved."
+        },
         {
           "id": "history-6d7f9ecd-81c4-4c05-a35b-299f5fa276b1",
           "at": "2026-08-03T02:44:56.918Z",
